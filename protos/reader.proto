@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+message Reader {
+  oneof reader_oneof {
+    EK100Reader ek100_reader = 1;
+  }
+}
+
+message EK100Reader {
+  // Path to the annotation pkl file.
+  optional string path_to_annotations = 1;
+
+  // Path to the video frames csv file.
+  optional string path_to_video_lengths = 2;
+
+  // Path to the feature directory.
+  optional string feature_directory = 3;
+
+  // Batch size.
+  optional int32 batch_size = 4 [default = 32];
+
+  // Shuffle buffer size.
+  optional int32 shuffle_buffer_size = 5 [default = 50];
+
+  // Prefetch buffer size.
+  optional int32 prefetch_buffer_size = 6 [default = 50];
+}

@@ -1,0 +1,64 @@
+syntax = "proto2";
+
+message Model {
+  extensions 1000 to max;
+}
+
+message Conv1D {
+  // Number of conv1d layers.
+  optional uint32 layers = 1 [default = 1];
+
+  // Dimensionality of the output space.
+  optional uint32 filters = 2 [default = 100];
+
+  // Length of the 1D convolution window.
+  optional uint32 kernel_size = 3 [default = 3];
+
+  // Dilation rate, value != 1 for atrou convolution.
+  optional uint32 dilation_rate = 4 [default = 1];
+
+  // Dropout rate.
+  optional float dropout_rate = 5 [default = 0];
+}
+
+message FSDet {
+  extend Model {
+    optional FSDet ext = 1001;
+  }
+
+  // Number of noun classes.
+  optional uint32 n_noun_classes = 2 [default = 300];
+
+  // Number of verb classes.
+  optional uint32 n_verb_classes = 3 [default = 97];
+
+  // If specified, add a conv1d layer to filter the sequence.
+  optional Conv1D conv1d = 4;
+
+  // Path to the csv file storing video info.
+  optional string video_info_csv_path = 5;
+
+  // Path to the pkl file storing ground-truth.
+  optional string eval_annotation_path = 6;
+}
+
+message WSDet {
+  extend Model {
+    optional WSDet ext = 1002;
+  }
+
+  // Number of noun classes.
+  optional uint32 n_noun_classes = 2 [default = 300];
+
+  // Number of verb classes.
+  optional uint32 n_verb_classes = 3 [default = 97];
+
+  // If specified, add a conv1d layer to filter the sequence.
+  optional Conv1D conv1d = 4;
+
+  // Path to the csv file storing video info.
+  optional string video_info_csv_path = 5;
+
+  // Path to the pkl file storing ground-truth.
+  optional string eval_annotation_path = 6;
+}
