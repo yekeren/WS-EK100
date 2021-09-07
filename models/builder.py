@@ -18,12 +18,22 @@ from __future__ import division
 from __future__ import print_function
 
 from protos import model_pb2
-from models.fs_det import FSDet
-from models.ws_det import WSDet
+from models.fully_det import FullyDet
+from models.weakly_det import WeaklyDet
+from models.single_time import SingleTimeDet
+from models.single_time_class_aware import SingleTimeClassAwareDet
+from models.single_time_class_aware_v2 import SingleTimeClassAwareDetV2
+from models.single_time_class_agnostic import SingleTimeClassAgnosticDet
+from models.single_time_class_agnostic_cross_attention import SingleTimeClassAgnosticCrossAttentionDet
 
 MODELS = {
-    model_pb2.FSDet.ext: FSDet,
-    model_pb2.WSDet.ext: WSDet,
+    model_pb2.FullyDet.ext: FullyDet,
+    model_pb2.WeaklyDet.ext: WeaklyDet,
+    model_pb2.SingleTimeDet.ext: SingleTimeDet,
+    model_pb2.SingleTimeClassAwareDet.ext: SingleTimeClassAwareDet,
+    model_pb2.SingleTimeClassAwareDetV2.ext: SingleTimeClassAwareDetV2,
+    model_pb2.SingleTimeClassAgnosticDet.ext: SingleTimeClassAgnosticDet,
+    model_pb2.SingleTimeClassAgnosticCrossAttentionDet.ext: SingleTimeClassAgnosticCrossAttentionDet,
 }
 
 

@@ -3,6 +3,8 @@ syntax = "proto2";
 message Reader {
   oneof reader_oneof {
     EK100Reader ek100_reader = 1;
+    EK100FLReader ek100_fl_reader = 2;
+    EK100STReader ek100_st_reader = 3;
   }
 }
 
@@ -13,15 +15,132 @@ message EK100Reader {
   // Path to the video frames csv file.
   optional string path_to_video_lengths = 2;
 
-  // Path to the feature directory.
-  optional string feature_directory = 3;
+  // Path to the video feature directory.
+  optional string video_feature_directory = 3;
+
+  // Path to the meta data directory.
+  optional string meta_data_directory = 4;
+
+  // Path to the audio feature directory.
+  optional string audio_feature_directory = 5;
+
+  // Path to the audio embedding directory.
+  optional string audio_embedding_directory = 6;
+
+  // Cache directory.
+  optional string cache_directory = 7;
 
   // Batch size.
-  optional int32 batch_size = 4 [default = 32];
+  optional int32 batch_size = 8 [default = 32];
 
   // Shuffle buffer size.
-  optional int32 shuffle_buffer_size = 5 [default = 50];
+  optional int32 shuffle_buffer_size = 9 [default = 50];
 
   // Prefetch buffer size.
-  optional int32 prefetch_buffer_size = 6 [default = 50];
+  optional int32 prefetch_buffer_size = 10 [default = 50];
+}
+
+message EK100WSReader {
+  // Path to the annotation pkl file.
+  optional string path_to_annotations = 1;
+
+  // Path to the video info csv file.
+  optional string path_to_video_lengths = 2;
+
+  // Path to the video feature directory.
+  optional string video_feature_directory = 3;
+
+  // Path to the meta data directory.
+  optional string meta_data_directory = 4;
+
+  // Path to the audio feature directory.
+  optional string audio_feature_directory = 5;
+
+  // Path to the audio embedding directory.
+  optional string audio_embedding_directory = 6;
+
+  // Cache directory.
+  optional string cache_directory = 7;
+
+  // Batch size.
+  optional int32 batch_size = 8 [default = 32];
+
+  // Shuffle buffer size.
+  optional int32 shuffle_buffer_size = 9 [default = 50];
+
+  // Prefetch buffer size.
+  optional int32 prefetch_buffer_size = 10 [default = 50];
+
+  // Sample length.
+  optional int32 sample_clips_length = 12 [default = 30];
+}
+
+message EK100STReader {
+  // Path to the annotation pkl file.
+  optional string path_to_annotations = 1;
+
+  // Path to the video info csv file.
+  optional string path_to_video_lengths = 2;
+
+  // Path to the video feature directory.
+  optional string video_feature_directory = 3;
+
+  // Path to the meta data directory.
+  optional string meta_data_directory = 4;
+
+  // Path to the audio feature directory.
+  optional string audio_feature_directory = 5;
+
+  // Path to the audio embedding directory.
+  optional string audio_embedding_directory = 6;
+
+  // Cache directory.
+  optional string cache_directory = 7;
+
+  // Batch size.
+  optional int32 batch_size = 8 [default = 32];
+
+  // Shuffle buffer size.
+  optional int32 shuffle_buffer_size = 9 [default = 50];
+
+  // Prefetch buffer size.
+  optional int32 prefetch_buffer_size = 10 [default = 50];
+
+  // Random offset range.
+  optional int32 random_offset_range = 11 [default = 0];
+}
+
+message EK100FLReader {
+  // Path to the annotation pkl file.
+  optional string path_to_annotations = 1;
+
+  // Path to the video info csv file.
+  optional string path_to_video_lengths = 2;
+
+  // Path to the video feature directory.
+  optional string video_feature_directory = 3;
+
+  // Path to the meta data directory.
+  optional string meta_data_directory = 4;
+
+  // Path to the audio feature directory.
+  optional string audio_feature_directory = 5;
+
+  // Path to the audio embedding directory.
+  optional string audio_embedding_directory = 6;
+
+  // Cache directory.
+  optional string cache_directory = 7;
+
+  // Batch size.
+  optional int32 batch_size = 8 [default = 32];
+
+  // Shuffle buffer size.
+  optional int32 shuffle_buffer_size = 9 [default = 50];
+
+  // Prefetch buffer size.
+  optional int32 prefetch_buffer_size = 10 [default = 50];
+
+  // Random offset range.
+  optional int32 random_offset_range = 11 [default = 0];
 }

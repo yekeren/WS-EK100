@@ -19,9 +19,13 @@ from __future__ import print_function
 
 from protos import reader_pb2
 from readers import ek100_reader
+from readers import ek100_st_reader
+from readers import ek100_fl_reader
 
 _READERS = {
     'ek100_reader': ek100_reader,
+    'ek100_st_reader': ek100_st_reader,
+    'ek100_fl_reader': ek100_fl_reader,
 }
 
 

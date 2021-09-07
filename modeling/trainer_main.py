@@ -44,13 +44,6 @@ flags.DEFINE_enum('job', 'train_and_evaluate',
                   ['train_and_evaluate', 'train', 'evaluate', 'test', 'debug'],
                   'Job type.')
 
-flags.DEFINE_string('closed_vocabulary_file', None, 'Path to closed vocab file.')
-flags.DEFINE_string('testing_input_pattern', None,
-                    'Path to input testing file.')
-
-flags.DEFINE_string('testing_res_file', None,
-                    'Path to output testing result file.')
-
 FLAGS = flags.FLAGS
 
 
@@ -94,17 +87,7 @@ def main(_):
   elif 'evaluate' == FLAGS.job:
     trainer.evaluate(pipeline_proto=pipeline_proto, model_dir=FLAGS.model_dir)
   elif 'test' == FLAGS.job:
-    if FLAGS.testing_input_pattern:
-      pipeline_proto.test_reader.caption_graph_reader.input_pattern[:] = [
-          FLAGS.testing_input_pattern
-      ]
-    if FLAGS.closed_vocabulary_file:
-      pipeline_proto.model.Extensions[model_pb2.Cap2SG.ext].preprocess_options.closed_vocabulary_file = FLAGS.closed_vocabulary_file
-    testing_res_file = FLAGS.testing_res_file if FLAGS.testing_res_file else 'testing_result_file.csv'
-    trainer.evaluate(pipeline_proto=pipeline_proto,
-                     model_dir=FLAGS.model_dir,
-                     testing=True,
-                     testing_res_file=testing_res_file)
+    trainer.evaluate(pipeline_proto=pipeline_proto, model_dir=FLAGS.model_dir, testing=True)
   elif 'debug' == FLAGS.job:
     trainer.debug(pipeline_proto=pipeline_proto, model_dir=FLAGS.model_dir)
   else:

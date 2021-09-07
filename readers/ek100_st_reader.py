@@ -21,6 +21,7 @@ from __future__ import print_function
 from absl import logging
 
 import os
+import random
 import scipy.interpolate
 import numpy as np
 import pandas as pd
@@ -31,6 +32,9 @@ from protos import reader_pb2
 
 _MINUTES_TO_SECONDS = 60
 _HOURS_TO_SECONDS = 60 * 60
+
+
+random.seed(286)
 
 
 def timestamp_to_seconds(timestamp):
@@ -51,21 +55,19 @@ def _read_annotations(path_to_annotations):
     groundtruth_df: A pandas.DataFrame instance.
   """
   annotations = pd.read_pickle(path_to_annotations)
+
+  # Fix the entris with NA narration_timestamp.
+  annotations = annotations.groupby('video_id', as_index=False).apply(
+      lambda x: x.sort_values(by='narration_id', ascending=True).fillna(method='ffill').fillna(method='bfill'))
+
   groundtruth_df = pd.DataFrame({
       'video_id': annotations['video_id'],
+      't_narration': annotations['narration_timestamp'].apply(timestamp_to_seconds),
       't_start': annotations['start_timestamp'].apply(timestamp_to_seconds),
       't_end': annotations['stop_timestamp'].apply(timestamp_to_seconds),
       'verb_class': annotations['verb_class'],
       'noun_class': annotations['noun_class'],
   })
-  # import json
-  # import collections
-  # activation_ids = (groundtruth_df.verb_class.to_numpy() * 300 + groundtruth_df.noun_class.to_numpy()).tolist()
-  # c = collections.Counter(activation_ids)
-  # ids = [k for k, v in c.items() if v >= 10]
-  # with open('action_id.txt', 'w') as f:
-  #   json.dump(ids, f)
-  # print(len(ids))
   return groundtruth_df
 
 
@@ -251,6 +253,82 @@ def _parse_instance_labels(groundtruth_df, video_ids, video_lengths, observation
   return noun_labels, verb_labels
 
 
+def _parse_single_timestamp_labels(groundtruth_df, video_ids, video_lengths, observation_windows):
+  """Parses the instance-level labels for the fully-supervised methods.
+
+  Args:
+    groundtruth_df: A pandas.DataFrame instance.
+    video_ids: Video ids, a [n_video_ids] ndarray.
+    video_lengths: Video lengths, a [n_video_ids] ndarray.
+    observation_windows: Length of video features, a [n_video_ids] ndarray.
+
+  Returns:
+    ws_t_start: clip starting time, a list of [n_action] ndarray.
+    ws_t_end: clip ending time, a list of [n_action] ndarray.
+    ws_noun_labels: clip-level noun labels, a list of [n_action] ndarray.
+    ws_verb_labels: clip-level verb labels, a list of [n_action] ndarray.
+  """
+  ws_t_narration = []
+  ws_verb_label, ws_noun_label = [], []
+
+  for video_id, video_length in zip(video_ids, video_lengths):
+    df = groundtruth_df[groundtruth_df.video_id == video_id].sort_values(by='t_narration')
+
+    ws_t_narration.append(df.t_narration.to_numpy())
+    ws_verb_label.append(1 + df.verb_class.to_numpy())
+    ws_noun_label.append(1 + df.noun_class.to_numpy())
+
+  return ws_t_narration, ws_noun_label, ws_verb_label
+
+
+def _bisearch_left(t_narration, value):
+  """Processes binary search to seek the start index.
+
+  Args:
+    t_narration: Narration array.
+    value: Starting time.
+
+  Returns:
+    Index i, such that t_narration[i] <= value < t_narration[i + 1].
+  """
+  if value <= t_narration[0]: return 0
+
+  l = len(t_narration)
+  left, right = 0, l - 1
+  while left < right:
+    mid = (left + right + 1) // 2
+    if value == t_narration[mid]:
+      return mid
+    elif value > t_narration[mid]:
+      left = mid
+    else:
+      right = mid - 1
+  return left
+
+def _bisearch_right(t_narration, value):
+  """Processes binary search to seek the end index.
+
+  Args:
+    t_narration: Narration array.
+    value: Starting time.
+
+  Returns:
+    Index i, such that t_narration[i - 1] < value <= t_narration[i].
+  """
+  l = len(t_narration)
+  if value >= t_narration[-1]: return l
+
+  left, right = 0, l - 1
+  while left < right:
+    mid = (left + right) // 2
+    if value == t_narration[mid]:
+      return mid
+    elif value > t_narration[mid]:
+      left = mid + 1
+    else:
+      right = mid
+  return left
+
 def _create_dataset(options, is_training, input_pipeline_context=None):
   """Creates dataset object based on options.
 
@@ -298,25 +376,51 @@ def _create_dataset(options, is_training, input_pipeline_context=None):
   noun_inst_labels, verb_inst_labels = _parse_instance_labels(
       groundtruth_df, video_ids, video_lengths, observation_windows)
 
+  ws_t_narrations, ws_noun_labels, ws_verb_labels = _parse_single_timestamp_labels(
+      groundtruth_df, video_ids, video_lengths, observation_windows)
+
   # Create TF dataset.
 
   def data_generator():
-    for video_id, video_feature, audio_embedding, gyroscope_feature, accelerator_feature, observation_window, noun_inst_label, verb_inst_label in zip(
-        video_ids, video_features, audio_embeddings, gyroscope_features, accelerator_features, observation_windows, noun_inst_labels, verb_inst_labels):
-      yield ((video_id, video_feature, audio_embedding, gyroscope_feature, accelerator_feature, observation_window), (noun_inst_label, verb_inst_label))
+    """Yields (video_id, video_feature, video_length), (n_action, noun_label, verb_label)."""
+    for video_id, video_feature, audio_embedding, gyroscope_feature, accelerator_feature, video_length, observation_window, ws_t_narration, ws_noun_label, ws_verb_label, noun_inst_label, verb_inst_label in zip(
+        video_ids, video_features, audio_embeddings, gyroscope_features, accelerator_features, video_lengths, observation_windows, ws_t_narrations, ws_noun_labels, ws_verb_labels, noun_inst_labels, verb_inst_labels):
+
+      if is_training:
+        index = random.randint(0, len(ws_t_narration) - 1)
+        verb_label, noun_label = ws_verb_label[index], ws_noun_label[index]
+        
+        start = ws_t_narration[index]
+        end = ws_t_narration[index + 1] if index + 1 < len(ws_t_narration) else video_length
+
+        # Randomize offset.
+        if options.random_offset_range > 0:
+          rand_start = np.random.uniform(start - options.random_offset_range, start)
+          rand_end = np.random.uniform(end, end + options.random_offset_range)
+          rand_start = max(rand_start, 0)
+          rand_end = min(rand_end, video_length)
+          start, end = rand_start, rand_end
+
+        start, end = int(start * observation_window / video_length), int(end * observation_window / video_length)
+        end = max(start + 1, end)
+
+      else:
+        noun_label = verb_label = 0
+        start, end = 0, observation_window
+
+      yield ((video_id, video_feature[start:end, :], audio_embedding[start:end, :], gyroscope_feature[start:end, :], accelerator_feature[start:end, :], end - start), (noun_label, verb_label))
 
 
   dataset = tf.data.Dataset.from_generator(
       data_generator, 
       output_types=((tf.string, tf.float32, tf.float32, tf.float32, tf.float32, tf.int32), (tf.int32, tf.int32)), 
       output_shapes=(
-        ([], [None, 2048], [None, 128], [None, 3], [None, 3], []), 
-        ([None], [None])))
+        ([], [None, 2048], [None, 128], [None, 3], [None, 3], []), ([], [])))
   if is_training:
     dataset = dataset.repeat()
     dataset = dataset.shuffle(buffer_size=options.shuffle_buffer_size)
   dataset = dataset.padded_batch(options.batch_size,
-      padded_shapes=(([], [None, 2048], [None, 128], [None, 3], [None, 3], []), ([None], [None])),
+      padded_shapes=(([], [None, 2048], [None, 128], [None, 3], [None, 3], []), ([], [])),
       drop_remainder=True)
   dataset = dataset.prefetch(options.prefetch_buffer_size)
   return dataset
@@ -332,7 +436,7 @@ def get_input_fn(options, is_training):
   Returns:
     input_fn: a callable that returns a dataset.
   """
-  if not isinstance(options, reader_pb2.EK100Reader):
+  if not isinstance(options, reader_pb2.EK100STReader):
     raise ValueError(
         'options has to be an instance of SceneGraphTextGraphReader.')
 

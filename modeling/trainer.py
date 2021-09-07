@@ -77,10 +77,6 @@ def create_model_fn(pipeline_proto, is_chief=True):
     # Predict resutls.
     predictions = model.predict(features)
 
-    # Get variables_to_train.
-    variables_to_train = model.get_variables_to_train()
-    scaffold = model.get_scaffold()
-
     total_loss = None
     train_op = None
     training_hooks = []
@@ -90,6 +86,8 @@ def create_model_fn(pipeline_proto, is_chief=True):
     if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
       # Compute total_loss.
       losses = model.build_losses(predictions, labels)
+      variables_to_train = model.get_variables_to_train()
+
       for name, loss in losses.items():
         tf.compat.v1.summary.scalar('losses/' + name, loss)
         tf.losses.add_loss(loss)
@@ -148,8 +146,7 @@ def create_model_fn(pipeline_proto, is_chief=True):
                                       loss=total_loss,
                                       train_op=train_op,
                                       eval_metric_ops=eval_metric_ops,
-                                      training_hooks=training_hooks,
-                                      scaffold=scaffold)
+                                      training_hooks=training_hooks)
 
   return _model_fn
 
@@ -275,7 +272,7 @@ def _evaluate(pipeline_proto, model_dir):
                      steps=eval_config.steps)
 
 
-def _test(pipeline_proto, model_dir, testing_res_file):
+def _test(pipeline_proto, model_dir):
   """Starts to test.
 
   Args:
@@ -284,8 +281,7 @@ def _test(pipeline_proto, model_dir, testing_res_file):
     testing_res_file: Path to the output result file.
   """
   # Create eval_spec.
-  eval_input_fn = reader.get_input_fn(pipeline_proto.test_reader,
-                                      is_training=False)
+  eval_input_fn = reader.get_input_fn(pipeline_proto.eval_reader, is_training=False)
 
   run_config = tf.estimator.RunConfig(session_config=tf.ConfigProto(
       allow_soft_placement=True, gpu_options=tf.GPUOptions(allow_growth=True)))
@@ -305,7 +301,7 @@ def _test(pipeline_proto, model_dir, testing_res_file):
       checkpoint_number = max(int(m.group(1)), checkpoint_number)
 
   if checkpoint_number > 0:
-    testing_result_csv_file = os.path.join(checkpoint_dir, testing_res_file)
+    testing_result_csv_file = os.path.join(checkpoint_dir, 'test_results.csv')
 
     # Do not re-evaluate if previous testing result is found.
     if os.path.isfile(testing_result_csv_file):
@@ -320,9 +316,9 @@ def _test(pipeline_proto, model_dir, testing_res_file):
 
       metrics = estimator.evaluate(eval_input_fn,
                                    checkpoint_path=checkpoint_path,
-                                   steps=40000)
+                                   steps=150)
       keys = [
-          key for key in sorted(metrics.keys()) if key.startswith('metrics')
+          key for key in sorted(metrics.keys()) if key.startswith('metrics') or 'per_class_map' in key
       ]
       with open(testing_result_csv_file, 'w') as f:
         f.write(','.join(keys) + '\n')
@@ -331,10 +327,7 @@ def _test(pipeline_proto, model_dir, testing_res_file):
                    testing_result_csv_file)
 
 
-def evaluate(pipeline_proto,
-             model_dir,
-             testing=False,
-             testing_res_file="testing_result_file.csv"):
+def evaluate(pipeline_proto, model_dir, testing=False):
   """Starts a evaluation.
 
   Args:
@@ -347,7 +340,7 @@ def evaluate(pipeline_proto,
   if not testing:
     return _evaluate(pipeline_proto, model_dir)
 
-  return _test(pipeline_proto, model_dir, testing_res_file)
+  return _test(pipeline_proto, model_dir)
 
 
 def predict(pipeline_proto,

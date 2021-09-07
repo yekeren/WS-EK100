@@ -94,11 +94,3 @@ class ModelBase(abc.ABC):
       A list of trainable model variables.
     """
     return None
-
-  def get_scaffold(self):
-    """Returns a scaffold object used to initialize variables.
-
-    Returns:
-      A tf.train.Scaffold instance.
-    """
-    return None
