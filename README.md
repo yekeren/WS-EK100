@@ -57,3 +57,43 @@ python "tools/wav_to_emb.py" \
   --checkpoint_path "data/vggish_model.ckpt"
 ```
 ### 1.2 Video Features
+
+Our offline video feature extraction process is primarily based on [https://github.com/epic-kitchens/C2-Action-Detection](https://github.com/epic-kitchens/C2-Action-Detection). So, it is recommended to get yourself familiar with the C2-Action-Detection repository. Our document is self-contained and we shall reiterate steps in [C2-Action-Detection](https://github.com/epic-kitchens/C2-Action-Detection), so, readers only need to refer to our document for extracting video features (when possible, refer to [C2-Action-Detection](https://github.com/epic-kitchens/C2-Action-Detection) for the missing details).
+
+First, clone and checkout **our modified** [C2-Action-Detection](https://github.com/epic-kitchens/C2-Action-Detection):
+```
+git clone https://github.com/yekeren/C2-Action-Detection
+git checkout yekeren/ek100-exporter
+```
+
+Next, download the full set of features:
+```
+cd C2-Action-Detection/BMNProposalGenerator
+sh scripts/download_data_ek100_full.sh
+```
+
+The above process shall generate two .mdb files ```data/ek100/rgb/data.mdb``` and ```data/ek100/flow/data.mdb```, storing the full set of features.
+
+Then, we create the PyTorch enviroment for feature extraction:
+```
+conda env create -f environment.yml
+conda activate c2-action-detection-bmn
+```
+
+
+Then, we sample **1 frame per second** using the full set. We assume ```data/ek100/video_features/``` to be the output feature directory (.npy video feature files will be generated here).
+
+```
+python export_video_features.py \
+  --path_to_dataset data/ek100 \
+  --path_to_video_features data/ek100/video_features/ \
+  --rgb_lmdb data/ek100/rgb \
+  --flow_lmdb data/ek100/flow
+```
+
+Finally, we go back to the root directory (```WS-EP100```) from our current path (```WS-EP100/C2-Action-Detection/BMNProposalGenerator```), and change back to our original python environment (e.g., ```conda activate ek100```).
+
+```
+cd ../../
+conda activate ek100  # An example, change to the actual enviroment.
+```
