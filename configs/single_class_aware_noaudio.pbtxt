@@ -1,0 +1,74 @@
+train_reader {
+  ek100_st_reader {
+    path_to_annotations: "epic-kitchens-100-annotations/EPIC_100_train.pkl"
+    path_to_video_lengths: "epic-kitchens-100-annotations/EPIC_100_video_info.csv"
+    video_feature_directory: "data/video_features_s1/"
+    meta_data_directory: "epic-kitchens-100/"
+    audio_feature_directory: "data/audio_feature_files/"
+    audio_embedding_directory: "data/audio_embedding_files/"
+    cache_directory: "cache/"
+    batch_size: 8
+    shuffle_buffer_size: 100
+    prefetch_buffer_size: 2
+  }
+}
+eval_reader {
+  ek100_st_reader {
+    path_to_annotations: "epic-kitchens-100-annotations/EPIC_100_validation.pkl"
+    path_to_video_lengths: "epic-kitchens-100-annotations/EPIC_100_video_info.csv"
+    video_feature_directory: "data/video_features_s1/"
+    meta_data_directory: "epic-kitchens-100/"
+    audio_feature_directory: "data/audio_feature_files/"
+    audio_embedding_directory: "data/audio_embedding_files/"
+    cache_directory: "cache/"
+    batch_size: 1
+    prefetch_buffer_size: 2
+  }
+} 
+model {
+  [SingleTimeClassAwareDet.ext] {
+    weight_decay: 0.0
+    n_noun_classes: 300
+    n_verb_classes: 97
+    conv1d {
+      layers: 1
+      filters: 100
+      kernel_size: 3
+      dropout_rate: 0.5
+    }
+    video_info_csv_path: "epic-kitchens-100-annotations/EPIC_100_video_info.csv"
+    eval_annotation_path: "epic-kitchens-100-annotations/EPIC_100_validation.pkl"
+    feature_config {
+      use_rgb: true
+      use_flow: true
+      use_audio: false
+      use_gyroscope: true
+      use_accelerator: true
+    }
+    attention_dropout_rate: 0.5
+  }
+}
+train_config {
+  learning_rate_schedule {
+    exponential_decay {
+      initial_learning_rate: 0.00001
+      decay_steps: 10000
+      decay_rate: 1.0
+      staircase: false
+    }
+  }
+  optimizer {
+    adam {
+    }
+  }
+  max_steps: 300000
+  log_step_count_steps: 50
+  save_summary_steps: 1000
+  save_checkpoints_steps: 5000
+  keep_checkpoint_max: 10
+}
+eval_config {
+  steps: 500
+  start_delay_secs: 30
+  throttle_secs: 10
+}
