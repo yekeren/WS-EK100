@@ -1,4 +1,4 @@
-# WS-EP100 - A weakly supervised video action detection model
+# WS-EK100 - A weakly supervised video action detection model
 
 * [0 Overview](#0-overview)
 * [1 Installation](#1-installation)
@@ -11,8 +11,8 @@
 ## 1 Installation
 
 ```
-git clone "https://github.com/yekeren/WS-EP100.git"
-cd "WS-EP100" && mkdir "data"
+git clone "https://github.com/yekeren/WS-EK100.git"
+cd "WS-EK100" && mkdir "data"
 ```
 
 We use Tensorflow 1.5 and Python 3.6.4. To continue, please ensure that at least the correct Python version is installed.
@@ -91,7 +91,7 @@ python export_video_features.py \
   --flow_lmdb data/ek100/flow
 ```
 
-Finally, we go back to the root directory (```WS-EP100```) from our current path (```WS-EP100/C2-Action-Detection/BMNProposalGenerator```), and change back to our original python environment (e.g., ```conda activate ek100```).
+Finally, we go back to the root directory (```WS-EK100```) from our current path (```WS-EK100/C2-Action-Detection/BMNProposalGenerator```), and change back to our original python environment (e.g., ```conda activate ek100```).
 
 ```
 cd ../../
