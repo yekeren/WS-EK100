@@ -4,6 +4,7 @@
 * [1 Installation](#1-installation)
   - [1.1 Audio Features](#11-audio-features)
   - [1.2 Video Features](#12-video-features)
+* [2 Model Training](#2-model-training)
 
 
 ## 0 Overview
@@ -97,3 +98,6 @@ Finally, we go back to the root directory (```WS-EK100```) from our current path
 cd ../../
 conda activate ek100  # An example, change to the actual enviroment.
 ```
+
+## 2 Model Training
+
